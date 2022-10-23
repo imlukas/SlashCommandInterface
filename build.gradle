@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+group 'me.imlukas'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        name 'm2-duncte123'
+        url 'https://m2.duncte123.dev/releases'
+    }
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation group: 'com.jagrosh', name: 'jda-utilities', version: '3.0.1'
+    implementation group: 'me.duncte123', name: 'botCommons', version: '2.3.14'
+}
+
+test {
+    useJUnitPlatform()
+}
