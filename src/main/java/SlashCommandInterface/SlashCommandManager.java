@@ -1,16 +1,17 @@
 package SlashCommandInterface;
 
-import me.imlukas.slashcommands.annotations.Option;
-import me.imlukas.slashcommands.annotations.SlashCommandHandler;
-import me.imlukas.slashcommands.annotations.SubCommand;
+import SlashCommandInterface.annotations.Option;
+import SlashCommandInterface.annotations.SlashCommand;
+import SlashCommandInterface.annotations.SlashCommandHandler;
+import SlashCommandInterface.annotations.SubCommand;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
