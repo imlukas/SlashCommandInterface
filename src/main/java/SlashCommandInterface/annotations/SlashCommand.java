@@ -1,6 +1,7 @@
 package SlashCommandInterface.annotations;
 
-import SlashCommandInterface.CommandType;
+
+import me.imlukas.slashcommands.CommandType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

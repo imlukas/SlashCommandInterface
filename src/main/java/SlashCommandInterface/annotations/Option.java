@@ -20,4 +20,6 @@ public @interface Option {
 
     boolean required() default false;
 
+    boolean autoComplete() default false;
+
 }

@@ -1,4 +1,4 @@
-package SlashCommandInterface;
+package SlashCommandInterface.interfaces;
 
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
 

@@ -1,9 +1,10 @@
 package SlashCommandInterface;
 
+import SlashCommandInterface.interfaces.ISlashCommandCtx;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 
-public class SlashCommandContext implements ISlashCommandContext {
+public class SlashCommandContext implements ISlashCommandCtx {
     private final SlashCommandInteractionEvent event;
 
     public SlashCommandContext(SlashCommandInteractionEvent event) {

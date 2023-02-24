@@ -1,41 +1,59 @@
 package SlashCommandInterface;
 
-import SlashCommandInterface.annotations.Option;
-import SlashCommandInterface.annotations.SlashCommand;
-import SlashCommandInterface.annotations.SlashCommandHandler;
-import SlashCommandInterface.annotations.SubCommand;
+import SlashCommandInterface.constants.CommandType;
+import SlashCommandInterface.interfaces.ISlashCommand;
+import SlashCommandInterface.wrapper.OptionTypeWrapper;
+import me.imlukas.slashcommands.annotations.Option;
+import me.imlukas.slashcommands.annotations.SlashCommand;
+import me.imlukas.slashcommands.annotations.SlashCommandHandler;
+import me.imlukas.slashcommands.annotations.SubCommand;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SlashCommandManager {
 
-    private final List<ISlashCommand> commands = new ArrayList<>();
+    private final List<ISlashCommand> slashCommands = new ArrayList<>();
 
-    public SlashCommandManager() {
-        // comamnds.add(new BanCommand());
+    public void registerCommand(ISlashCommand... commands) {
+        for (ISlashCommand command : commands) {
+            registerCommand(command);
+        }
     }
 
     public void registerCommand(ISlashCommand command) {
-        commands.add(command);
+        slashCommands.add(command);
     }
 
     public void registerCommands(List<ISlashCommand> commands) {
-        this.commands.addAll(commands);
+        slashCommands.addAll(commands);
     }
 
-    // registers all the commands, according to the annotations
+    /**
+     * Method responsible for setting up
+     * all the registered slash commands.
+     * This method will set up both subcommands and commands as
+     * well as their options, if any.
+     *
+     * @param guild the guild to set up the commands for
+     * @param type  the type of commands to set up {@link CommandType}
+     */
     public void init(Guild guild, CommandType type) {
-        List<CommandData> commands = new ArrayList<>();
-        for (ISlashCommand command : getCommands()) {
+        List<CommandData> guildCommands = new ArrayList<>();
+        List<CommandData> globalCommands = new ArrayList<>();
+
+        for (ISlashCommand command : getSlashCommands()) {
 
             Class<?> clazz = command.getClass();
 
@@ -58,7 +76,7 @@ public class SlashCommandManager {
                     }
                     if (!(optionAnnotations.isEmpty())) {
                         for (Option option : optionAnnotations) {
-                            subcommandData.addOption(option.type(), option.name(), option.description(), option.required());
+                            subcommandData.addOption(option.type(), option.name(), option.description(), option.required(), option.autoComplete());
                         }
                     }
 
@@ -67,69 +85,76 @@ public class SlashCommandManager {
                     continue;
                 }
                 // Handle main command method's options
-                for (Parameter parameter : parameters) {
-                    if (parameter.isAnnotationPresent(Option.class)) {
-                        optionAnnotations.add(parameter.getAnnotation(Option.class));
+                if (method.isAnnotationPresent(SlashCommandHandler.class)) {
+                    for (Parameter parameter : parameters) {
+                        if (parameter.isAnnotationPresent(Option.class)) {
+                            optionAnnotations.add(parameter.getAnnotation(Option.class));
+                        }
                     }
-
                 }
+
             }
             // slash command creation
             if (!(optionAnnotations.isEmpty())) {
                 for (Option option : optionAnnotations) {
-                    commandData.addOption(option.type(), option.name(), option.description(), option.required());
+                    commandData.addOption(option.type(), option.name(), option.description(), option.required(), option.autoComplete());
                 }
             }
-            // handles SlashCommand annotation
+
+            // Handle command type
+            CommandType commandType = type;
             if (clazz.isAnnotationPresent(SlashCommand.class)) {
-                CommandType commandType = clazz.getAnnotation(SlashCommand.class).type();
-                updateCommand(guild, commandData, commandType);
+                commandType = clazz.getAnnotation(SlashCommand.class).type();
+            }
+            if (commandType == CommandType.GUILD) {
+                guildCommands.add(commandData.setDefaultPermissions(command.getPermission()));
                 continue;
             }
-            commands.add(commandData.setDefaultPermissions(command.getPermission()));
-
+            globalCommands.add(commandData.setDefaultPermissions(command.getPermission()));
         }
-        if (type == CommandType.GUILD) {
-            updateCommands(guild, commands, type);
-        } else {
-            updateCommands(guild, commands, type);
-        }
-    }
-
-    // updates the commands on the guild
-
-    public void updateCommand(Guild guild, CommandData command, CommandType type) {
-        if (type == CommandType.GUILD) {
-            guild.updateCommands().addCommands(command).queue();
-        } else {
-            guild.upsertCommand(command).queue();
-        }
-    }
-
-    public void updateCommands(Guild guild, List<CommandData> commands, CommandType type) {
-        if (type == CommandType.GUILD) {
-            guild.updateCommands()
-                    .addCommands(commands)
-                    .queue();
-            return;
-        }
-        for (CommandData command : commands) {
-            guild.upsertCommand(command)
-                    .queue();
-        }
+        updateCommands(guildCommands, globalCommands, guild);
     }
 
 
-    public List<ISlashCommand> getCommands() {
-        return commands;
+    /**
+     * Method responsible for updating the slash commands
+     * in the guild.
+     *
+     * @param guildCommands  commands to be updated on the guild.
+     * @param globalCommands commands to be updated globally.
+     * @param guild          guild to update the commands on.
+     */
+    public void updateCommands(List<CommandData> guildCommands, List<CommandData> globalCommands, Guild guild) {
+
+        guild.updateCommands().addCommands(guildCommands).queue();
+
+        for (CommandData commandData : globalCommands) {
+            guild.upsertCommand(commandData).queue();
+        }
+
     }
 
+    /**
+     * Returns a list with all the registered slash commands.
+     * This list can be empty if no slash commands have been registered.
+     *
+     * @return all the registered slash commands
+     */
+    public List<ISlashCommand> getSlashCommands() {
+        return slashCommands;
+    }
+
+    /**
+     * Gets a command based on the name.
+     *
+     * @param commandName name of the command
+     * @return Desired SlashCommand or null if not found
+     */
     @Nullable
-    public ISlashCommand getCommand(String search) {
+    public ISlashCommand getCommand(String commandName) {
 
-        String searchLower = search.toLowerCase();
-
-        for (ISlashCommand cmd : this.commands) {
+        String searchLower = commandName.toLowerCase();
+        for (ISlashCommand cmd : getSlashCommands()) {
             if (cmd.getName().equalsIgnoreCase(searchLower)) {
                 return cmd;
             }
@@ -139,9 +164,20 @@ public class SlashCommandManager {
 
     }
 
-    // runs the command
+
+    /**
+     * Method responsible for running the slashcommand
+     * This method takes in consideration the arguments and options
+     * of the slash command and executes the command / subcommand.
+     *
+     * @param instance instance of the slash command
+     * @param method   method to be executed, this represents the command / subcommand
+     * @param context  context of the slash command
+     * @param options  options of the slash command if any
+     */
     public void run(ISlashCommand instance, Method method, SlashCommandContext context, Map<String, Object> options) {
 
+        // handle method arguments and options
         Parameter[] parameters = method.getParameters();
         Object[] args = new Object[parameters.length];
 
@@ -163,7 +199,14 @@ public class SlashCommandManager {
         }
     }
 
-    // handles the slash command parameters
+    /**
+     * Handles the slash command interaction.
+     * This method should be called on {@link SlashCommandInteractionEvent}
+     * trigger.
+     *
+     * @param event the event {@link SlashCommandInteractionEvent}
+     * @see SlashCommandInteractionEvent
+     */
     public void handle(SlashCommandInteractionEvent event) {
 
         ISlashCommand command = getCommand(event.getName());
@@ -180,7 +223,6 @@ public class SlashCommandManager {
         Class<?> clazz = command.getClass();
 
         Method[] methods = clazz.getMethods();
-
         if (event.getSubcommandName() != null) {
             for (Method method : methods) {
                 if (!(method.isAnnotationPresent(SubCommand.class))) {
@@ -200,9 +242,6 @@ public class SlashCommandManager {
                 break;
             }
         }
-
-        event.deferReply().queue();
-
     }
 
 
