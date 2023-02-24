@@ -1,12 +1,10 @@
  # SlashCommandInterface
-Interface made to make implementing SlashCommands in JDA much easier to make.
+Interface made to make implementing SlashCommands in JDA5 much easier to make.
 
 I thought making SlashCommands was a bit of a hassle because of the amount of code it was necessary 
 to manually add options, subcommands, and even the commands itself.
 
 This interface is made with the use of Java Reflection.
-
-You have two example commands attached on the project so you can have a look at how it works without needing to read the whole README.
 
 <details><summary>Annotations</summary>
 
